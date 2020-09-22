@@ -4,7 +4,7 @@ vault login -method=userpass username=operations password=Password1
 export CONSUL_HTTP_TOKEN=$(vault read -field token consul/creds/ops)
 consul acl token read -self
 
-cat <<EOF > ./jwt_auth_config.json
+cat <<EOF > /root/policies/jwt_auth_config.json
 {
     "BoundAudiences": [
     "https://management.azure.com/"
@@ -16,7 +16,7 @@ cat <<EOF > ./jwt_auth_config.json
     }
 }
 EOF
-consul acl auth-method create -name azure -type jwt -config @jwt_auth_config.json
+consul acl auth-method create -name azure -type jwt -config @/root/policies/jwt_auth_config.json
 consul acl binding-rule create -method=azure -bind-type=role -bind-name=app-role -selector='value.xms_mirid matches `.*/app`'
 consul acl binding-rule create -method=azure -bind-type=role -bind-name=web-role -selector='value.xms_mirid matches `.*/web`'
 
