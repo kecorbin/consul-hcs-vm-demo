@@ -568,7 +568,7 @@ challenges:
     consul acl token read -self
 
     ```
-    Review the policy for the web service
+    Create the policy for the web service
 
     ```
     cat << EOF > /root/policies/ingress.hcl
@@ -595,7 +595,7 @@ challenges:
     consul acl role create \
       -name "ingress-role" \
       -description "Role for the ingress gateway service" \
-      -policy-name "ingress-policy-policy"
+      -policy-name "ingress-policy"
     ```
 
     Create an ACL binding rule for the ingress service.
@@ -604,6 +604,21 @@ challenges:
     consul acl binding-rule create -method=azure -bind-type=role -bind-name=ingress-role -selector='value.xms_mirid matches `.*/ingress`'
     ```
 
+    Create Vault Role for Ingress service
+
+    ```
+    echo 'path "secret/data/consul/shared" {
+        capabilities = ["read"]
+    }' | vault policy write web -
+
+    vault write auth/azure/role/web \
+        policies="web" \
+        bound_service_principal_ids=$(terraform output -state /root/terraform/iam/terraform.tfstate web_identity_principal_id) \
+        ttl=8h
+    vault read auth/azure/role/web
+    ```
+
+
     Provision Ingress VM Scale Set
 
     ```
@@ -611,6 +626,8 @@ challenges:
     terraform plan
     terraform apply -auto-approve
     ```
+
+
   tabs:
   - title: HCS Overview
     type: website

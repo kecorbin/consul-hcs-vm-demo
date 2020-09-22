@@ -74,7 +74,7 @@ cat <<EOC > /etc/consul/config/consul.json
   "log_level":"INFO",
   "ui":true,
   "retry_join":[
-    "${retry_join}"
+    "$retry_join"
   ],
   "ports": {
     "grpc": 8502
