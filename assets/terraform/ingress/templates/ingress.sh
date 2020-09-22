@@ -137,7 +137,7 @@ systemctl enable envoy
 
 systemctl restart consul
 
-
+mkdir -p /etc/consul/gateway/
 cat <<EOF > /etc/consul/gateway/ingress-gateway.hcl
 Kind = "ingress-gateway"
 Name = "ingress-service"

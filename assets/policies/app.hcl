@@ -2,7 +2,7 @@
 node_prefix "app-" {
     policy = "write"
 }
-agent "app" {
+agent_prefix "app-" {
     policy = "write"
 }
 key_prefix "_rexec" {

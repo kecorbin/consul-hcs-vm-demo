@@ -1,7 +1,7 @@
 node_prefix "web-" {
   policy = "write"
 }
-agent "web" {
+agent_prefix "web-" {
   policy = "write"
 }
 key_prefix "_rexec" {

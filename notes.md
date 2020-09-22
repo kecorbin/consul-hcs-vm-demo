@@ -1,34 +1,4 @@
 
-Launch an instance of https://play.instruqt.com/hashicorp/tracks/f5-hashicorp-app-mod-tf-consul
-
-Skip to Deploy Legacy environments
-
-Upgrade Consul CLI on workstation
-
-```
-workdir=$(pwd)
-cd /tmp
-rm /usr/local/bin/consul
-rm /usr/bin/consul
-wget https://releases.hashicorp.com/consul/1.8.0+ent/consul_1.8.0+ent_linux_amd64.zip -O consul.zip
-unzip ./consul.zip
-mv ./consul /usr/bin/consul
-cd $workdir
-```
-
-Fetch updated assets
-
-```
-workdir=$(pwd)
-cd /tmp
-rm -rf field-workshops-consul
-git clone https://github.com/hashicorp/field-workshops-consul
-cd field-workshops-consul
-git checkout f5-add-vm-auth
-cp -R instruqt-tracks/f5-hashicorp-app-mod-tf-consul/assets/terraform/legacy/* /root/terraform/legacy
-cd $workdir
-
-```
 
 Create IAM roles
 
@@ -223,4 +193,3 @@ bastion_ip=$(terraform output -state /root/terraform/vnet/terraform.tfstate bast
 echo "export bastion_ip=${bastion_ip}" >> ~/.bashrc
 
 ssh -q -A -J azure-user@$bastion_ip azure-user@$web_server
-    
