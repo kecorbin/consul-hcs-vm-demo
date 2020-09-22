@@ -361,7 +361,7 @@ challenges:
     Configure Consul to accept JWT's from the Azure MSI service.
 
     ```
-    cat <<EOF > ./jwt_auth_config.json
+    cat <<EOF > /root/policies/jwt_auth_config.json
     {
       "BoundAudiences": [
         "https://management.azure.com/"
@@ -373,7 +373,7 @@ challenges:
       }
     }
     EOF
-    consul acl auth-method create -name azure -type jwt -config @jwt_auth_config.json
+    consul acl auth-method create -name azure -type jwt -config @/root/policies/jwt_auth_config.json
     consul acl binding-rule create -method=azure -bind-type=role -bind-name=app-role -selector='value.xms_mirid matches `.*/app`'
     consul acl binding-rule create -method=azure -bind-type=role -bind-name=web-role -selector='value.xms_mirid matches `.*/web`'
     ```
@@ -556,6 +556,7 @@ challenges:
   difficulty: basic
   timelimit: 3000
 - slug: service-mesh-ingress
+  id: 9y3q5kixygie
   type: challenge
   title: Create an ingress service
   teaser: Create an ingress service to access service mesh workloads externally.
@@ -629,8 +630,6 @@ challenges:
     terraform plan
     terraform apply -auto-approve
     ```
-
-
   tabs:
   - title: HCS Overview
     type: website
@@ -657,5 +656,4 @@ challenges:
     hostname: workstation
   difficulty: basic
   timelimit: 3000
-
-checksum: "7993691698180708204"
+checksum: "13554442159248146040"

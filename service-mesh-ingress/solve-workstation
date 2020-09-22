@@ -1,7 +1,44 @@
 #!/bin/bash
 
+vault login -method=userpass username=operations password=Password1
+export CONSUL_HTTP_TOKEN=$(vault read -field token consul/creds/ops)
+consul acl token read -self
 
+cat << EOF > /root/policies/ingress.hcl
+node_prefix "ingress-" {
+    policy = "write"
+}
+service "ingress-gateway" {
+    policy = "write"
+}
+service_prefix "" {
+    policy = "read"
+}
+EOF
 
+consul acl policy create \
+    -name "ingress-policy" \
+    -description "Policy for ingress gateways" \
+    -rules @/root/policies/ingress.hcl
+consul acl role create \
+    -name "ingress-role" \
+    -description "Role for the ingress gateway service" \
+    -policy-name "ingress-policy"
 
+consul acl binding-rule create -method=azure -bind-type=role -bind-name=ingress-role -selector='value.xms_mirid matches `.*/ingress`'
 
+vault login root
+echo 'path "secret/data/consul/shared" {
+    capabilities = ["read"]
+}' | vault policy write ingress -
+
+vault write auth/azure/role/ingress \
+    policies="ingress" \
+    bound_service_principal_ids=$(terraform output -state /root/terraform/iam/terraform.tfstate ingress_identity_principal_id) \
+    ttl=8h
+vault read auth/azure/role/ingress
+
+cd /root/terraform/ingress/
+terraform plan
+terraform apply -auto-approve > /root/terraform/ingress/terraform.out
 exit 0
