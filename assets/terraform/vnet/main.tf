@@ -11,7 +11,7 @@ resource "random_string" "participant" {
 }
 
 resource "azurerm_resource_group" "instruqt" {
-  name     = "instruqt-f5-tf-consul-azure-${random_string.participant.result}"
+  name     = "field-demo-hcs-vm-${random_string.participant.result}"
   location = "East US"
 }
 
