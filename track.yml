@@ -1,0 +1,261 @@
+slug: hcs-vm-deployment
+id: e0pdfojykqvx
+version: 0.0.1
+type: track
+title: HCS VM Deployment
+teaser: Provision HCS and VM based  clients Azure
+description: Use HashiCorp Consul Service (HCS) to add service discovery and service
+  mesh capabilities to your VM based environments on Microsoft Azure.
+icon: https://storage.googleapis.com/instruqt-frontend/assets/hashicorp/tracks/consul.png
+tags: []
+owner: hashicorp
+developers:
+- lance@hashicorp.com
+- kcorbin@hashicorp.com
+private: true
+published: true
+show_timer: true
+challenges:
+- slug: provision-azure-vnets
+  id: e2yhpfkqkpg1
+  type: challenge
+  title: Provision Azure VNETs
+  teaser: Deploy basic network infrastructure using Terraform
+  assignment: |-
+    In this assignment you will provision the VNets we will use in the following assignments. <br>
+
+    Inspect and deploy the Terraform code.
+
+    In the `Shell` tab run the following commands.
+    ```
+    terraform plan
+    terraform apply -auto-approve
+    ```
+
+    Their CIDR blocks are listed below:
+    ```
+    hcs-vnet: 10.0.0.0/16
+    shared-svcs-vnet: 10.2.0.0/16
+    legacy-vnet: 10.3.0.0/16
+    aks-vnet: 10.4.0.0/16
+    ```
+
+    You will leverage these VNet in the next few assignments.
+  notes:
+  - type: text
+    contents: |
+      Setting up your environment...
+      Keep an eye on the bottom right corner to know when you can get started.
+  tabs:
+  - title: Shell
+    type: terminal
+    hostname: workstation
+  - title: Text Editor
+    type: code
+    hostname: workstation
+    path: /root/terraform/vnet
+  difficulty: basic
+  timelimit: 3000
+- slug: provision-core-services
+  id: horvoci14l5i
+  type: challenge
+  title: Provision Core Services
+  teaser: Provision Vault and HCS using Terraform
+  assignment: |2-
+
+    Start with Vault. Vault is a secrets management solution that we will use to securely store sensitive information such as usernames, passwords, certificates, and tokens.<br>
+
+    In the `Shell` tab run the following commands.
+    ```
+    cd /root/terraform/vault
+    terraform plan
+    terraform apply -auto-approve
+    ```
+
+    Next, provision the HashiCorp Consul service. HCS provides Consul as a Managed service on Azure. <br>
+    ```
+    cd /root/terraform/hcs
+    terraform plan
+    terraform apply -auto-approve
+    ```
+  notes:
+  - type: text
+    contents: |
+      Terraform allows you to document, share, and deploy environments in one workflow by using Infrastructure as Code!
+  tabs:
+  - title: Shell
+    type: terminal
+    hostname: workstation
+  - title: Vault Terraform Code
+    type: code
+    hostname: workstation
+    path: /root/terraform/vault
+  - title: HCS Terraform Code
+    type: code
+    hostname: workstation
+    path: /root/terraform/hcs
+  difficulty: basic
+  timelimit: 3000
+- slug: validate-hcs
+  id: psmptkjhezfz
+  type: challenge
+  title: Validate HCS
+  teaser: Verify Vault, HCS, and Consul are operational
+  assignment: |2-
+
+    Consul HCS and Vault should now be provisioned and accessible from the corresponding tabs.
+
+    In this exercise we will gather the information required to connect to HCS and securely store this information in Vault.
+
+    In the `Shell` tab run the following commands.
+    ```
+    vault login -method=userpass username=operations password=Password1
+    ```
+
+    Retrieve the bootstrap token and gossip key from HCS and save it to your Vault instance.
+
+    ```
+    echo $CONSUL_HTTP_ADDR
+    echo $VAULT_ADDR
+    rg=$(terraform output -state /root/terraform/vnet/terraform.tfstate resource_group_name)
+    az hcs get-config -g ${rg} --name hcs
+    bootstrap_token=$(az hcs create-token --resource-group ${rg} --name hcs | jq  -r .masterToken.secretId)
+    gossip_key=$(cat consul.json | jq -r '.encrypt')
+    retry_join=$(cat consul.json | jq -r '.retry_join[0]')
+    ca=$(cat ca.pem)
+    vault kv put secret/consul/server master_token=${bootstrap_token}
+    vault kv put secret/consul/shared gossip_key=${gossip_key} retry_join=$retry_join ca="${ca}"
+    vault kv put secret/consul master_token=${bootstrap_token} gossip_key=${gossip_key}
+    ```
+
+    Now inspect the credentials.
+
+    ```
+    echo $VAULT_ADDR
+    vault kv get secret/consul
+    ```
+    You can use this token to login and explore the Consul UI, use of the master token should be highly restricted, instead let's configure Vault to issue [dynamic secrets](https://www.vaultproject.io/docs/secrets/consul/) for Consul. <br>
+
+    Get a management token for Vault to manage Consul tokens with.
+    You can retrieve the privileged token for this operation from Vault.  <br>
+
+    ```
+    export CONSUL_HTTP_TOKEN=$(vault kv get -field=master_token secret/consul)
+    vault_consul_mgmt_token=$(consul acl token create -policy-name=global-management -description "vault mgmt" | grep SecretID | cut -d ":" -f2 | xargs)
+
+    ```
+    Now configure the secrets engine.
+
+    ```
+    vault write consul/config/access address=${CONSUL_HTTP_ADDR} token=${vault_consul_mgmt_token}
+    vault read consul/config/access
+    ```
+
+    Last, create a policy for the operations team, and link it to the Vault role.
+
+    ```
+    consul acl policy create -name "ops" -description "admin policy for ops" -rules 'acl = "write" operator = "write" namespace_prefix "" {acl = "write"}'
+    vault write consul/roles/ops policies=ops ttl=1h
+    ```
+
+    Now you are ready to get a dynamic Consul token from Vault for an operator.
+    Validate the token after you fetch it. <br>
+
+    ```
+    export CONSUL_HTTP_TOKEN=$(vault read -field token consul/creds/ops)
+    consul acl token read -self
+    ```
+
+    You can use this token to set up the anonymous policy.
+
+    ```
+    echo '
+    node_prefix "" {
+      policy = "read"
+    }
+    service_prefix "" {
+      policy = "read"
+    }
+    session_prefix "" {
+      policy = "read"
+    }
+    agent_prefix "" {
+      policy = "read"
+    }
+    query_prefix "" {
+      policy = "read"
+    }
+    operator = "read"' |  consul acl policy create -name anonymous -rules -
+    consul acl token update -id anonymous -policy-name anonymous
+    ```
+
+    You will use this role in a later assignment to configure access for Consul service consumers.
+  tabs:
+  - title: Consul
+    type: service
+    hostname: workstation
+    path: /
+    port: 8500
+  - title: Vault
+    type: service
+    hostname: workstation
+    path: /
+    port: 8200
+  - title: Text Editor
+    type: code
+    hostname: workstation
+    path: /root
+  - title: Shell
+    type: terminal
+    hostname: workstation
+  difficulty: basic
+  timelimit: 3000
+- slug: deploy-vm-environments
+  id: daw5ieuyvfxr
+  type: challenge
+  title: Deploy Legacy environments
+  teaser: Migrate an existing VM based application to the cloud.
+  assignment: |2-
+
+    In this assignment we will be deploying the application into Azure based VM's. <br>
+
+    Review the code in the `Terraform Code` this defines the VMSS for the web and app tiers of the application.
+
+    Begin provisioning the application in the background.
+
+    ```
+    terraform plan
+    terraform apply -auto-approve
+    ```
+
+    You will explore the environment in more detail in the next challange. <br>
+  notes:
+  - type: text
+    contents: |
+      For a lot of organizations digital transformation may start with a simple "lift and shift" to the cloud for existing workloads!
+  tabs:
+  - title: Terraform Code
+    type: code
+    hostname: workstation
+    path: /root/terraform/vms
+  - title: Vault
+    type: service
+    hostname: workstation
+    path: /
+    port: 8200
+  - title: Shell
+    type: terminal
+    hostname: workstation
+  - title: Consul
+    type: service
+    hostname: workstation
+    path: /
+    port: 8500
+  - title: App
+    type: service
+    hostname: workstation
+    path: /ui
+    port: 8080
+  difficulty: basic
+  timelimit: 3000
+checksum: "4459751116165238801"
