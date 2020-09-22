@@ -25,6 +25,8 @@ EOT
 consul_token = "${token}"
 EOF
 
-
+set-workdir /root/terraform/vms
+cd /root/terraform/vms
+terraform init
 
 exit 0

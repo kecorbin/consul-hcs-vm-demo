@@ -83,6 +83,12 @@ challenges:
     contents: |
       Terraform allows you to document, share, and deploy environments in one workflow by using Infrastructure as Code!
   tabs:
+  - title: HCS Overview
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/hcs.html
+  - title: Diagram
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/vm-vm.html
   - title: Shell
     type: terminal
     hostname: workstation
@@ -94,12 +100,6 @@ challenges:
     type: code
     hostname: workstation
     path: /root/terraform/hcs
-  - title: HCS Overview
-    type: website
-    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/hcs.html
-  - title: Diagram
-    type: website
-    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/vm-vm.html
   difficulty: basic
   timelimit: 3000
 - slug: validate-hcs
@@ -198,6 +198,12 @@ challenges:
 
     You will use this role in a later assignment to configure access for Consul service consumers.
   tabs:
+  - title: HCS Overview
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/hcs.html
+  - title: Diagram
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/vm-vm.html
   - title: Consul
     type: service
     hostname: workstation
@@ -233,6 +239,12 @@ challenges:
 
     ```
   tabs:
+  - title: HCS Overview
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/hcs.html
+  - title: Diagram
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/vm-vm.html
   - title: Consul
     type: service
     hostname: workstation
@@ -243,7 +255,7 @@ challenges:
     hostname: workstation
     path: /
     port: 8200
-  - title: Text Editor
+  - title: Terraform - IAM
     type: code
     hostname: workstation
     path: /root/terraform/iam
@@ -304,6 +316,12 @@ challenges:
 
     ```
   tabs:
+  - title: HCS Overview
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/hcs.html
+  - title: Diagram
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/vm-vm.html
   - title: Consul
     type: service
     hostname: workstation
@@ -329,7 +347,17 @@ challenges:
   title: Create Consul Auth method for Azure
   teaser: In this step we will allow Azure based workloads to authenticate to Consul
     using Service Principals by configuring a JWT auth method.
-  assignment: |-
+  assignment: |2-
+
+    Login to Vault and get a consul token
+
+    ```
+    vault login -method=userpass username=operations password=Password1
+    export CONSUL_HTTP_TOKEN=$(vault read -field token consul/creds/ops)
+    consul acl token read -self
+
+    ```
+
     Configure Consul to accept JWT's from the Azure MSI service.
 
     ```
@@ -350,6 +378,12 @@ challenges:
     consul acl binding-rule create -method=azure -bind-type=role -bind-name=web-role -selector='value.xms_mirid matches `.*/web`'
     ```
   tabs:
+  - title: HCS Overview
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/hcs.html
+  - title: Diagram
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/vm-vm.html
   - title: Consul
     type: service
     hostname: workstation
@@ -389,19 +423,7 @@ challenges:
         client_secret=$ARM_CLIENT_SECRET
     ```
 
-    Stash some secrets in vault
-
-    ```
-    rg=$(terraform output -state /root/terraform/vnet/terraform.tfstate resource_group_name)
-    az hcs get-config -g ${rg} --name hcs
-    bootstrap_token=$(az hcs create-token --resource-group ${rg} --name hcs | jq  -r .masterToken.secretId)
-    gossip_key=$(cat consul.json | jq -r '.encrypt')
-    retry_join=$(cat consul.json | jq -r '.retry_join[0]')
-    ca=$(cat ca.pem)
-    vault kv put secret/consul/server master_token=${bootstrap_token}
-    vault kv put secret/consul/shared gossip_key=${gossip_key} retry_join=$retry_join ca="${ca}"
-    ```
-    Now that we have a user identity we configure Vault to trust this VM so it can retrieve the gossip key required to bootstrap Consul. This process will be fully automated with native Consul auth in the next release.
+    Create Vault Policies for web servers, which will be authenticated using their service principals
 
     ```
     echo 'path "secret/data/consul/shared" {
@@ -410,13 +432,13 @@ challenges:
 
     vault write auth/azure/role/web \
         policies="web" \
-        bound_service_principal_ids=$(terraform output -state /root/terraform/vms/iam/terraform.tfstate web_identity_principal_id) \
+        bound_service_principal_ids=$(terraform output -state /root/terraform/iam/terraform.tfstate web_identity_principal_id) \
         ttl=8h
     vault read auth/azure/role/web
 
     ```
 
-    Repeat for the app role
+    Repeat for the app servers
     ```
     echo 'path "secret/data/consul/shared" {
       capabilities = ["read"]
@@ -424,11 +446,17 @@ challenges:
 
     vault write auth/azure/role/app \
         policies="app" \
-        bound_service_principal_ids=$(terraform output -state /root/terraform/vms/iam/terraform.tfstate app_identity_principal_id) \
+        bound_service_principal_ids=$(terraform output -state /root/terraform/iam/terraform.tfstate app_identity_principal_id) \
         ttl=8h
     vault read auth/azure/role/app
     ```
   tabs:
+  - title: HCS Overview
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/hcs.html
+  - title: Diagram
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/vm-vm.html
   - title: Consul
     type: service
     hostname: workstation
@@ -472,10 +500,17 @@ challenges:
     contents: |
       For a lot of organizations digital transformation may start with a simple "lift and shift" to the cloud for existing workloads!
   tabs:
-  - title: Terraform Code
-    type: code
+  - title: HCS Overview
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/hcs.html
+  - title: Diagram
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/vm-vm.html
+  - title: Consul
+    type: service
     hostname: workstation
-    path: /root/terraform/vms
+    path: /
+    port: 8500
   - title: Vault
     type: service
     hostname: workstation
@@ -484,16 +519,10 @@ challenges:
   - title: Shell
     type: terminal
     hostname: workstation
-  - title: Consul
-    type: service
+  - title: Terraform - App
+    type: code
     hostname: workstation
-    path: /
-    port: 8500
-  - title: App
-    type: service
-    hostname: workstation
-    path: /ui
-    port: 8080
+    path: /root/terraform/vms
   difficulty: basic
   timelimit: 3000
-checksum: "3225442417019337003"
+checksum: "3242921164015795130"

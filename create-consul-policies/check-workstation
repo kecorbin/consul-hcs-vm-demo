@@ -1,0 +1,6 @@
+#!/bin/bash
+
+consul acl policy read -name web-policy
+consul acl policy read -name app-policy
+
+exit 0
