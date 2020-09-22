@@ -555,4 +555,87 @@ challenges:
     path: /root/terraform/vms
   difficulty: basic
   timelimit: 3000
+- slug: service-mesh-ingress
+  type: challenge
+  title: Create an ingress service
+  teaser: Create an ingress service to access service mesh workloads externally.
+  assignment: |-
+    Login to Vault and get a consul token
+
+    ```
+    vault login -method=userpass username=operations password=Password1
+    export CONSUL_HTTP_TOKEN=$(vault read -field token consul/creds/ops)
+    consul acl token read -self
+
+    ```
+    Review the policy for the web service
+
+    ```
+    cat << EOF > /root/policies/ingress.hcl
+    node_prefix "ingress-" {
+      policy = "write"
+    }
+    service "ingress-gateway" {
+      policy = "write"
+    }
+    service_prefix "" {
+      policy = "read"
+    }
+    EOF
+
+    ```
+
+    Create ACL poliy and role for the web service.
+
+    ```
+    consul acl policy create \
+      -name "ingress-policy" \
+      -description "Policy for ingress gateways" \
+      -rules @/root/policies/ingress.hcl
+    consul acl role create \
+      -name "ingress-role" \
+      -description "Role for the ingress gateway service" \
+      -policy-name "ingress-policy-policy"
+    ```
+
+    Create an ACL binding rule for the ingress service.
+
+    ```
+    consul acl binding-rule create -method=azure -bind-type=role -bind-name=ingress-role -selector='value.xms_mirid matches `.*/ingress`'
+    ```
+
+    Provision Ingress VM Scale Set
+
+    ```
+    cd /root/terraform/ingress/
+    terraform plan
+    terraform apply -auto-approve
+    ```
+  tabs:
+  - title: HCS Overview
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/hcs.html
+  - title: Diagram
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/vm-vm.html
+  - title: Consul
+    type: service
+    hostname: workstation
+    path: /
+    port: 8500
+  - title: Vault
+    type: service
+    hostname: workstation
+    path: /
+    port: 8200
+  - title: Text Editor
+    type: code
+    hostname: workstation
+    path: /root
+  - title: Shell
+    type: terminal
+    hostname: workstation
+  difficulty: basic
+  timelimit: 3000
+
 checksum: "7993691698180708204"

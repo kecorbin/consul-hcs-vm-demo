@@ -1,8 +1,6 @@
 #!/bin/bash
 
 consul_lb=$(terraform output -state /root/terraform/hcs/terraform.tfstate consul_url)
-
-
 endpoint=$(az resource show --ids "/subscriptions/$(az account show | jq -r .id)/resourceGroups/$(terraform output --state ../vnet/terraform.tfstate resource_group_name)/providers/Microsoft.Solutions/applications/hcs/customconsulClusters/hashicorp-consul-cluster" --api-version 2018-09-01-preview | jq -r .properties.consulConfigFile | base64 -d | jq -r .retry_join[0])
 consulconfig=$(az resource show --ids "/subscriptions/$(az account show | jq -r .id)/resourceGroups/$(terraform output -state /root/terraform/vnet/terraform.tfstate resource_group_name)/providers/Microsoft.Solutions/applications/hcs/customconsulClusters/hashicorp-consul-cluster" --api-version 2018-09-01-preview | jq -r .properties.consulConfigFile | base64 -d)
 ca_cert=$(az resource show --ids "/subscriptions/$(az account show | jq -r .id)/resourceGroups/$(terraform output -state /root/terraform/vnet/terraform.tfstate resource_group_name)/providers/Microsoft.Solutions/applications/hcs/customconsulClusters/hashicorp-consul-cluster" --api-version 2018-09-01-preview | jq -r .properties.consulCaFile | base64 -d)
@@ -20,8 +18,8 @@ EOT
 consul_token = "${token}"
 EOF
 
-set-workdir /root/terraform/vms
-cd /root/terraform/vms
+set-workdir /root/terraform/ingress
+cd /root/terraform/ingress
 terraform init
 
 exit 0

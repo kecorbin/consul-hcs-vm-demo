@@ -150,6 +150,7 @@ cd $workdir
 EOF
 chmod +x /usr/local/bin/get_assets
 get_assets
+
 #ssh agent
 ssh-keygen -f ~/.ssh/id_rsa -y > ~/.ssh/id_rsa.pub
 eval $(ssh-agent)

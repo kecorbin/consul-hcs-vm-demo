@@ -42,8 +42,8 @@ resource "azurerm_virtual_machine_scale_set" "ingress_vmss" {
     computer_name_prefix = "ingress-vm-"
     admin_username       = "azure-user"
     custom_data          = base64encode(templatefile(
-      "./templates/ingress.sh", 
-      { 
+      "./templates/ingress.sh",
+      {
         consul_datacenter = "east-us"
         vault_server = data.terraform_remote_state.vault.outputs.vault_ip
       }

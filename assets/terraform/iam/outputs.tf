@@ -13,3 +13,11 @@ output "app_identity_id" {
 output "app_identity_principal_id" {
   value = azurerm_user_assigned_identity.app.principal_id
 }
+
+output "ingress_identity_id" {
+  value = azurerm_user_assigned_identity.ingress.id
+}
+
+output "ingress_identity_principal_id" {
+  value = azurerm_user_assigned_identity.ingress.principal_id
+}
