@@ -569,7 +569,7 @@ challenges:
     consul acl token read -self
 
     ```
-    Create the policy for the web service
+    Create the policy for the ingress service
 
     ```
     cat << EOF > /root/policies/ingress.hcl
@@ -633,7 +633,27 @@ challenges:
     vault read auth/azure/role/ingress
     ```
 
+    Apply ingress gateway configuration
 
+    ```
+    cat << EOF > ingress-gateway.hcl
+    Kind = "ingress-gateway"
+    Name = "ingress-gateway"
+
+    Listeners = [
+    {
+      Port = 8080
+      Protocol = "tcp"
+      Services = [
+        {
+          Name = "web"
+        }
+      ]
+    }
+    ]
+    EOF
+    consul config write ingress-gateway.hcl
+    ```
     Provision Ingress VM Scale Set
 
     ```

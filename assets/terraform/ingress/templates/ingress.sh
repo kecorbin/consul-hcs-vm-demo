@@ -119,7 +119,7 @@ After=network-online.target
 Wants=consul.service
 
 [Service]
-ExecStart=/usr/bin/consul connect envoy -gateway=ingress -register -service ingress-service -address '{{ GetInterfaceIP "eth0" }}:8888'
+ExecStart=/usr/bin/consul connect envoy -gateway=ingress -register -service ingress-gateway -address '{{ GetInterfaceIP "eth0" }}:8080'
 Restart=always
 RestartSec=5
 StartLimitIntervalSec=0
@@ -136,25 +136,5 @@ systemctl enable consul
 systemctl enable envoy
 
 systemctl restart consul
-
-mkdir -p /etc/consul/gateway/
-cat <<EOF > /etc/consul/gateway/ingress-gateway.hcl
-Kind = "ingress-gateway"
-Name = "ingress-gateway"
-
-Listeners = [
- {
-   Port = 8080
-   Protocol = "tcp"
-   Services = [
-     {
-       Name = "web"
-     }
-   ]
- }
-]
-EOF
-
-consul config write /etc/consul/gateway/ingress-gateway.hcl
 systemctl restart envoy
 
