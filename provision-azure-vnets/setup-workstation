@@ -138,11 +138,18 @@ rm -f *.zip
 cd /root
 
 #get assets
+cat << EOF > /usr/local/bin/get_assets
+#!/bin/bash
+workdir=$(pwd)
+cd /root
 git clone https://github.com/kecorbin/consul-hcs-vm-demo
 cp -r consul-hcs-vm-demo/assets/terraform .
 cp -r consul-hcs-vm-demo/assets/policies .
 rm -rf consul-hcs-vm-demo
-
+cd $workdir
+EOF
+chmod +x /usr/local/bin/get_assets
+get_assets
 #ssh agent
 ssh-keygen -f ~/.ssh/id_rsa -y > ~/.ssh/id_rsa.pub
 eval $(ssh-agent)
@@ -162,6 +169,6 @@ set-workdir /root/terraform/vnet
 cd /root/terraform/vnet
 
 #extra sleep for cred propagation
-sleep 300
+sleep 180
 
 exit 0

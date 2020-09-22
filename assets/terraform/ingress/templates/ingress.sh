@@ -52,9 +52,6 @@ cat <<EOF > /etc/consul/consul_start.sh
 # Get JWT token from the metadata service and write it to a file
 curl 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fmanagement.azure.com%2F' -H Metadata:true -s | jq -r .access_token > ./meta.token
 
-# Use the token to log into the Consul server, we need a valid ACL token to join the cluster and setup autoencrypt
-CONSUL_HTTP_ADDR=https://$retry_join consul login -method azure -bearer-token-file ./meta.token -token-sink-file /etc/consul/consul.token
-
 # Generate the Consul Config which includes the token so Consul can join the cluster
 cat <<EOC > /etc/consul/config/consul.json
 {
@@ -63,7 +60,7 @@ cat <<EOC > /etc/consul/config/consul.json
     "down_policy":"async-cache",
     "default_policy":"deny",
     "tokens": {
-      "default":"\$(cat /etc/consul/consul.token)"
+      "default":"${consul_token}"
     }
   },
   "ca_file":"/etc/consul/ca.pem",
@@ -74,7 +71,7 @@ cat <<EOC > /etc/consul/config/consul.json
   "log_level":"INFO",
   "ui":true,
   "retry_join":[
-    "$retry_join"
+    "${retry_join}"
   ],
   "ports": {
     "grpc": 8502

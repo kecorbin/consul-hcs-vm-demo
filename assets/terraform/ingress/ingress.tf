@@ -62,7 +62,7 @@ resource "azurerm_virtual_machine_scale_set" "ingress_vmss" {
   network_profile {
     name                      = "ingress-vms-netprofile"
     primary                   = true
-    network_security_group_id = azurerm_network_security_group.webserver-sg.id
+    network_security_group_id = azurerm_network_security_group.ingress-sg.id
     ip_configuration {
       name      = "ingress-IPConfiguration"
       subnet_id = data.terraform_remote_state.vnet.outputs.legacy_subnets[0]
@@ -72,7 +72,7 @@ resource "azurerm_virtual_machine_scale_set" "ingress_vmss" {
 }
 
 resource "azurerm_network_security_group" "ingress-sg" {
-  name                = "webserver-security-group"
+  name                = "ingress-security-group"
   location            = data.terraform_remote_state.vnet.outputs.resource_group_location
   resource_group_name = data.terraform_remote_state.vnet.outputs.resource_group_name
 
@@ -124,13 +124,25 @@ resource "azurerm_network_security_group" "ingress-sg" {
   }
 
   security_rule {
-    name                       = "ingress-gateway"
+    name                       = "ingress-gateway-external"
     priority                   = 1005
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "8080"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "ingress-gateway-internal"
+    priority                   = 1006
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "8888"
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
