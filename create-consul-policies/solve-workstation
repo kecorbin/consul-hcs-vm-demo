@@ -1,0 +1,27 @@
+#!/bin/bash
+
+cat /root/policies/web.hcl
+
+consul acl policy create \
+    -name "web-policy" \
+    -description "Policy for web service to grant agent permissions" \
+    -rules @/root/policies/web.hcl
+consul acl role create \
+    -name "web-role" \
+    -description "Role for the web service" \
+    -policy-name "web-policy"
+
+
+cat /root/policies/app.hcl
+
+consul acl policy create \
+    -name "app-policy" \
+    -description "Policy for app service to grant agent permissions" \
+    -rules @/root/policies/app.hcl
+consul acl role create \
+    -name "app-role" \
+    -description "Role for the app service" \
+    -policy-name "app-policy"
+
+
+exit 0

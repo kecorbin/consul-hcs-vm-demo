@@ -115,7 +115,8 @@ cd /tmp
 echo "installing consul..."
 wget https://releases.hashicorp.com/consul/1.8.0+ent/consul_1.8.0+ent_linux_amd64.zip -O consul.zip
 unzip ./consul.zip
-mv ./consul /usr/bin/consul
+mv ./consul /usr/local/bin/consul
+rm -f *.zip
 cd /root
 
 #install vault
@@ -139,7 +140,8 @@ cd /root
 #get assets
 git clone https://github.com/kecorbin/consul-hcs-vm-demo
 cp -r consul-hcs-vm-demo/assets/terraform .
-rm -rf field-workshops-consul
+cp -r consul-hcs-vm-demo/assets/policies .
+rm -rf consul-hcs-vm-demo
 
 #ssh agent
 ssh-keygen -f ~/.ssh/id_rsa -y > ~/.ssh/id_rsa.pub
@@ -160,6 +162,6 @@ set-workdir /root/terraform/vnet
 cd /root/terraform/vnet
 
 #extra sleep for cred propagation
-sleep 60
+sleep 300
 
 exit 0

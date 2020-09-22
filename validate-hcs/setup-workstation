@@ -38,13 +38,12 @@ vault login root
 
 vault auth enable userpass
 vault write auth/userpass/users/operations password=Password1 policies=ops token_ttl=8h
-vault write auth/userpass/users/backend password=Password1 policies=backend token_ttl=30m
 vault secrets enable consul
 
 echo 'path "secret/*" {
   capabilities = ["list"]
 }
-path "secret/data/consul" {
+path "secret/data/consul/*" {
   capabilities = ["create", "read", "update", "delete"]
 }
 path "consul/*"
@@ -52,10 +51,6 @@ path "consul/*"
   capabilities = ["create", "read", "update", "delete"]
 }' | vault policy write ops -
 
-echo 'path "consul/creds/backend-developer"
-{
-  capabilities = ["read"]
-}' | vault policy write backend -
 
 unset VAULT_TOKEN
 

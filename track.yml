@@ -94,13 +94,20 @@ challenges:
     type: code
     hostname: workstation
     path: /root/terraform/hcs
+  - title: HCS Overview
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/hcs.html
+  - title: Diagram
+    type: website
+    url: https://htmlpreview.github.io/?https://github.com/kecorbin/consul-hcs-vm-demo/blob/master/assets/diagrams/vm-vm.html
   difficulty: basic
   timelimit: 3000
 - slug: validate-hcs
   id: psmptkjhezfz
   type: challenge
   title: Validate HCS
-  teaser: Verify Vault, HCS, and Consul are operational
+  teaser: Validate that HCS is operational, fetch Consul configuration data from HCS,
+    and securely store it in Vault.
   assignment: |2-
 
     Consul HCS and Vault should now be provisioned and accessible from the corresponding tabs.
@@ -210,6 +217,237 @@ challenges:
     hostname: workstation
   difficulty: basic
   timelimit: 3000
+- slug: create-service-principals
+  id: 9uz8jowxedns
+  type: challenge
+  title: Create Identities.
+  teaser: Use Terraform to create Azure service principals.
+  assignment: |-
+    Create IAM roles
+
+    ```
+    cd /root/terraform/iam
+    terraform init
+    terraform plan
+    terraform apply -auto-approve
+
+    ```
+  tabs:
+  - title: Consul
+    type: service
+    hostname: workstation
+    path: /
+    port: 8500
+  - title: Vault
+    type: service
+    hostname: workstation
+    path: /
+    port: 8200
+  - title: Text Editor
+    type: code
+    hostname: workstation
+    path: /root/terraform/iam
+  - title: Shell
+    type: terminal
+    hostname: workstation
+  difficulty: basic
+  timelimit: 3000
+- slug: create-consul-policies
+  id: fejqp2qchvdf
+  type: challenge
+  title: Create Consul ACL Policies
+  teaser: Consul ACL policies grant permissions to nodes and services.
+  assignment: |-
+    Login to Vault and get a consul token
+
+    ```
+    vault login -method=userpass username=operations password=Password1
+    export CONSUL_HTTP_TOKEN=$(vault read -field token consul/creds/ops)
+    consul acl token read -self
+
+    ```
+    Review the policy for the web service
+
+    ```
+    cat /root/policies/web.hcl
+    ```
+
+    Create ACL poliy and role for the web service.
+
+    ```
+    consul acl policy create \
+      -name "web-policy" \
+      -description "Policy for web service to grant agent permissions" \
+      -rules @/root/policies/web.hcl
+    consul acl role create \
+      -name "web-role" \
+      -description "Role for the web service" \
+      -policy-name "web-policy"
+    ```
+
+    Review the policy for the app service
+
+    ```
+    cat /root/policies/app.hcl
+    ```
+
+    Create ACL poliy and role for the app service.
+    ```
+    consul acl policy create \
+      -name "app-policy" \
+      -description "Policy for app service to grant agent permissions" \
+      -rules @/root/policies/app.hcl
+    consul acl role create \
+      -name "app-role" \
+      -description "Role for the app service" \
+      -policy-name "app-policy"
+
+    ```
+  tabs:
+  - title: Consul
+    type: service
+    hostname: workstation
+    path: /
+    port: 8500
+  - title: Vault
+    type: service
+    hostname: workstation
+    path: /
+    port: 8200
+  - title: Text Editor
+    type: code
+    hostname: workstation
+    path: /root
+  - title: Shell
+    type: terminal
+    hostname: workstation
+  difficulty: basic
+  timelimit: 3000
+- slug: configure-consul-auth-method
+  id: vvspbrxytdbx
+  type: challenge
+  title: Create Consul Auth method for Azure
+  teaser: In this step we will allow Azure based workloads to authenticate to Consul
+    using Service Principals by configuring a JWT auth method.
+  assignment: |-
+    Configure Consul to accept JWT's from the Azure MSI service.
+
+    ```
+    cat <<EOF > ./jwt_auth_config.json
+    {
+      "BoundAudiences": [
+        "https://management.azure.com/"
+      ],
+      "BoundIssuer": "https://sts.windows.net/${ARM_TENANT_ID}/",
+      "JWKSURL":"https://login.microsoftonline.com/${ARM_TENANT_ID}/discovery/v2.0/keys",
+      "ClaimMappings": {
+          "id": "xms_mirid"
+      }
+    }
+    EOF
+    consul acl auth-method create -name azure -type jwt -config @jwt_auth_config.json
+    consul acl binding-rule create -method=azure -bind-type=role -bind-name=app-role -selector='value.xms_mirid matches `.*/app`'
+    consul acl binding-rule create -method=azure -bind-type=role -bind-name=web-role -selector='value.xms_mirid matches `.*/web`'
+    ```
+  tabs:
+  - title: Consul
+    type: service
+    hostname: workstation
+    path: /
+    port: 8500
+  - title: Vault
+    type: service
+    hostname: workstation
+    path: /
+    port: 8200
+  - title: Text Editor
+    type: code
+    hostname: workstation
+    path: /root
+  - title: Shell
+    type: terminal
+    hostname: workstation
+  difficulty: basic
+  timelimit: 3000
+- slug: configure-vault-auth-method
+  id: f00b179ddwpw
+  type: challenge
+  title: Create Vault Auth method for Azure
+  teaser: In this step we will configure the Azure auth-method for Vault.  This will
+    allow Azure workloads to securely authenticate with Vault, and retrieve sensitive
+    information about the Consul cluster including gossip encryption keys and certificates.
+  assignment: |-
+    Enable/Configure Azure Auth Method
+
+    ```
+    vault login root
+    vault auth enable azure
+    vault write auth/azure/config \
+        tenant_id=$ARM_TENANT_ID \
+        resource="https://management.azure.com/" \
+        client_id=$ARM_CLIENT_ID \
+        client_secret=$ARM_CLIENT_SECRET
+    ```
+
+    Stash some secrets in vault
+
+    ```
+    rg=$(terraform output -state /root/terraform/vnet/terraform.tfstate resource_group_name)
+    az hcs get-config -g ${rg} --name hcs
+    bootstrap_token=$(az hcs create-token --resource-group ${rg} --name hcs | jq  -r .masterToken.secretId)
+    gossip_key=$(cat consul.json | jq -r '.encrypt')
+    retry_join=$(cat consul.json | jq -r '.retry_join[0]')
+    ca=$(cat ca.pem)
+    vault kv put secret/consul/server master_token=${bootstrap_token}
+    vault kv put secret/consul/shared gossip_key=${gossip_key} retry_join=$retry_join ca="${ca}"
+    ```
+    Now that we have a user identity we configure Vault to trust this VM so it can retrieve the gossip key required to bootstrap Consul. This process will be fully automated with native Consul auth in the next release.
+
+    ```
+    echo 'path "secret/data/consul/shared" {
+      capabilities = ["read"]
+    }' | vault policy write web -
+
+    vault write auth/azure/role/web \
+        policies="web" \
+        bound_service_principal_ids=$(terraform output -state /root/terraform/vms/iam/terraform.tfstate web_identity_principal_id) \
+        ttl=8h
+    vault read auth/azure/role/web
+
+    ```
+
+    Repeat for the app role
+    ```
+    echo 'path "secret/data/consul/shared" {
+      capabilities = ["read"]
+    }' | vault policy write app -
+
+    vault write auth/azure/role/app \
+        policies="app" \
+        bound_service_principal_ids=$(terraform output -state /root/terraform/vms/iam/terraform.tfstate app_identity_principal_id) \
+        ttl=8h
+    vault read auth/azure/role/app
+    ```
+  tabs:
+  - title: Consul
+    type: service
+    hostname: workstation
+    path: /
+    port: 8500
+  - title: Vault
+    type: service
+    hostname: workstation
+    path: /
+    port: 8200
+  - title: Text Editor
+    type: code
+    hostname: workstation
+    path: /root
+  - title: Shell
+    type: terminal
+    hostname: workstation
+  difficulty: basic
+  timelimit: 3000
 - slug: deploy-vm-environments
   id: daw5ieuyvfxr
   type: challenge
@@ -258,4 +496,4 @@ challenges:
     port: 8080
   difficulty: basic
   timelimit: 3000
-checksum: "4459751116165238801"
+checksum: "3225442417019337003"

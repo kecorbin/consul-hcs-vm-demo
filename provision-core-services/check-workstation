@@ -7,15 +7,9 @@ if [ -f /tmp/skip-check ]; then
     exit 0
 fi
 
-if [ ! -f /root/terraform/vault/terraform.out ]; then
-    fail-message "Vault provisioning has not been started"
-    exit 1
-fi
+vault_lb=$(terraform output -state=/root/terraform/vault/terraform.tfstate vault_lb)
+consul_lb=$(terraform output -state /root/terraform/hcs/terraform.tfstate consul_url)
 
-if [ ! -f /root/terraform/hcs/terraform.out ]; then
-    fail-message "HCS provisioning has not been started"
-    exit 1
-fi
 
 exit 0
 

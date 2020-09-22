@@ -1,0 +1,19 @@
+#!/bin/bash
+
+cat <<EOF > ./jwt_auth_config.json
+{
+    "BoundAudiences": [
+    "https://management.azure.com/"
+    ],
+    "BoundIssuer": "https://sts.windows.net/${ARM_TENANT_ID}/",
+    "JWKSURL":"https://login.microsoftonline.com/${ARM_TENANT_ID}/discovery/v2.0/keys",
+    "ClaimMappings": {
+        "id": "xms_mirid"
+    }
+}
+EOF
+consul acl auth-method create -name azure -type jwt -config @jwt_auth_config.json
+consul acl binding-rule create -method=azure -bind-type=role -bind-name=app-role -selector='value.xms_mirid matches `.*/app`'
+consul acl binding-rule create -method=azure -bind-type=role -bind-name=web-role -selector='value.xms_mirid matches `.*/web`'
+
+exit 0

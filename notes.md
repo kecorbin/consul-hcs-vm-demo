@@ -80,7 +80,7 @@ EOF
 Define the policy for the web service
 
 ```
-mkdir -p /root/policies
+
 cat << EOF > /root/policies/web.hcl
 node_prefix "web-" {
   policy = "write"

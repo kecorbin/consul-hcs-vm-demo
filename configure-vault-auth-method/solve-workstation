@@ -1,0 +1,39 @@
+#!/bin/bash
+
+vault login root
+vault auth enable azure
+vault write auth/azure/config \
+    tenant_id=$ARM_TENANT_ID \
+    resource="https://management.azure.com/" \
+    client_id=$ARM_CLIENT_ID \
+    client_secret=$ARM_CLIENT_SECRET
+
+rg=$(terraform output -state /root/terraform/vnet/terraform.tfstate resource_group_name)
+az hcs get-config -g ${rg} --name hcs
+bootstrap_token=$(az hcs create-token --resource-group ${rg} --name hcs | jq  -r .masterToken.secretId)
+gossip_key=$(cat consul.json | jq -r '.encrypt')
+retry_join=$(cat consul.json | jq -r '.retry_join[0]')
+ca=$(cat ca.pem)
+vault kv put secret/consul/server master_token=${bootstrap_token}
+vault kv put secret/consul/shared gossip_key=${gossip_key} retry_join=$retry_join ca="${ca}"
+
+echo 'path "secret/data/consul/shared" {
+    capabilities = ["read"]
+}' | vault policy write web -
+
+vault write auth/azure/role/web \
+    policies="web" \
+    bound_service_principal_ids=$(terraform output -state /root/terraform/vms/iam/terraform.tfstate web_identity_principal_id) \
+    ttl=8h
+vault read auth/azure/role/web
+
+# Repeat for the app role
+echo 'path "secret/data/consul/shared" {
+    capabilities = ["read"]
+}' | vault policy write app -
+
+vault write auth/azure/role/app \
+    policies="app" \
+    bound_service_principal_ids=$(terraform output -state /root/terraform/vms/iam/terraform.tfstate app_identity_principal_id) \
+    ttl=8h
+vault read auth/azure/role/app
