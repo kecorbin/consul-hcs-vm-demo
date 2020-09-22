@@ -479,7 +479,7 @@ challenges:
 - slug: deploy-vm-environments
   id: daw5ieuyvfxr
   type: challenge
-  title: Deploy Legacy environments
+  title: Deploy VM Application
   teaser: Migrate an existing VM based application to the cloud.
   assignment: |2-
 
@@ -494,7 +494,37 @@ challenges:
     terraform apply -auto-approve
     ```
 
-    You will explore the environment in more detail in the next challange. <br>
+    ```
+    bastion_ip=$(terraform output -state /root/terraform/vnet/terraform.tfstate bastion_ip)
+    echo "export bastion_ip=${bastion_ip}" >> ~/.bashrc
+    ```
+
+    Grab one of the webservers via the Consul API.
+
+    ```
+    web_server=$(curl -s $CONSUL_HTTP_ADDR/v1/catalog/service/web | jq -r '.[0].Address')
+    echo $web_server
+    ```
+
+    SSH into the webserver (optional)
+    ```
+    ssh -q -A -J azure-user@$bastion_ip azure-user@$web_server
+    ```
+
+    Login to Vault and get a consul token
+
+    ```
+    vault login -method=userpass username=operations password=Password1
+    export CONSUL_HTTP_TOKEN=$(vault read -field token consul/creds/ops)
+    consul acl token read -self
+
+    ```
+
+    Create Intention
+
+    ```
+    consul intention create web app
+    ```
   notes:
   - type: text
     contents: |
@@ -525,4 +555,4 @@ challenges:
     path: /root/terraform/vms
   difficulty: basic
   timelimit: 3000
-checksum: "3242921164015795130"
+checksum: "18300905654177826242"

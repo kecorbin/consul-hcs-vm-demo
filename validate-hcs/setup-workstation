@@ -43,6 +43,10 @@ vault secrets enable consul
 echo 'path "secret/*" {
   capabilities = ["list"]
 }
+
+path "secret/data/consul" {
+  capabilities = ["create", "read", "update", "delete"]
+}
 path "secret/data/consul/*" {
   capabilities = ["create", "read", "update", "delete"]
 }
