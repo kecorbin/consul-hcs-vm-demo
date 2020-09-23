@@ -345,8 +345,8 @@ challenges:
   id: vvspbrxytdbx
   type: challenge
   title: Create Consul Auth method for Azure
-  teaser: In this step we will allow Azure based workloads to authenticate to Consul
-    using Service Principals by configuring a JWT auth method.
+  teaser: Allow Azure based workloads to authenticate to Consul using Service Principals
+    using Consul JWT auth method.
   assignment: |2-
 
     Login to Vault and get a consul token
@@ -407,9 +407,8 @@ challenges:
   id: f00b179ddwpw
   type: challenge
   title: Create Vault Auth method for Azure
-  teaser: In this step we will configure the Azure auth-method for Vault.  This will
-    allow Azure workloads to securely authenticate with Vault, and retrieve sensitive
-    information about the Consul cluster including gossip encryption keys and certificates.
+  teaser: Configure the Azure auth-method for Vault to allow Azure workloads to securely
+    authenticate with Vault, and retrieve secrets.
   assignment: |-
     Enable/Configure Azure Auth Method
 
@@ -480,7 +479,7 @@ challenges:
   id: daw5ieuyvfxr
   type: challenge
   title: Deploy VM Application
-  teaser: Migrate an existing VM based application to the cloud.
+  teaser: Deploy VM based applications using Terraform.
   assignment: |2-
 
     In this assignment we will be deploying the application into Azure based VM's. <br>
@@ -687,4 +686,4 @@ challenges:
     hostname: workstation
   difficulty: basic
   timelimit: 3000
-checksum: "17261495092843048115"
+checksum: "16599105099884605375"
