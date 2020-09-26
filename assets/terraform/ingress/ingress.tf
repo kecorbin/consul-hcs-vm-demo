@@ -7,7 +7,7 @@ resource "azurerm_virtual_machine_scale_set" "ingress_vmss" {
   upgrade_policy_mode = "Manual"
 
   identity {
-    type = "UserAssigned"
+    type         = "UserAssigned"
     identity_ids = [data.terraform_remote_state.iam.outputs.ingress_identity_id]
   }
 
@@ -41,11 +41,11 @@ resource "azurerm_virtual_machine_scale_set" "ingress_vmss" {
   os_profile {
     computer_name_prefix = "ingress-vm-"
     admin_username       = "azure-user"
-    custom_data          = base64encode(templatefile(
-      "./templates/ingress.sh",
+    custom_data = base64encode(templatefile(
+      var.custom_data_file,
       {
         consul_datacenter = "east-us"
-        vault_server = data.terraform_remote_state.vault.outputs.vault_ip
+        vault_server      = data.terraform_remote_state.vault.outputs.vault_ip
       }
     ))
   }
@@ -64,9 +64,10 @@ resource "azurerm_virtual_machine_scale_set" "ingress_vmss" {
     primary                   = true
     network_security_group_id = azurerm_network_security_group.ingress-sg.id
     ip_configuration {
-      name      = "ingress-IPConfiguration"
-      subnet_id = data.terraform_remote_state.vnet.outputs.legacy_subnets[0]
-      primary   = true
+      name                                   = "ingress-IPConfiguration"
+      subnet_id                              = data.terraform_remote_state.vnet.outputs.legacy_subnets[0]
+      load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.bpepool.id]
+      primary                                = true
     }
   }
 }
