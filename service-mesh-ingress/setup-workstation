@@ -6,6 +6,24 @@ consulconfig=$(az resource show --ids "/subscriptions/$(az account show | jq -r 
 ca_cert=$(az resource show --ids "/subscriptions/$(az account show | jq -r .id)/resourceGroups/$(terraform output -state /root/terraform/vnet/terraform.tfstate resource_group_name)/providers/Microsoft.Solutions/applications/hcs/customconsulClusters/hashicorp-consul-cluster" --api-version 2018-09-01-preview | jq -r .properties.consulCaFile | base64 -d)
 token=$(vault kv get -field=master_token secret/consul)
 
+#setup Application tab
+rg=$(terraform output -state /root/terraform/vnet/terraform.tfstate resource_group_name)
+location=$(terraform output -state /root/terraform/vnet/terraform.tfstate resource_group_location)
+app_url=http://${rg}.${location}.cloudapp.azure.com
+cat << EOF > /etc/nginx/conf.d/app.conf
+server {
+  listen 8080;
+  location / {
+    proxy_pass ${app_url};
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_redirect off;
+  }
+  access_log /var/log/nginx/consul.log;
+}
+EOF
+/usr/sbin/service nginx restart
+
+
 cat << EOF > /root/terraform/ingress/terraform.tfvars
 ssh_public_key = "$(cat ~/.ssh/id_rsa.pub)"
 endpoint = "${endpoint}"

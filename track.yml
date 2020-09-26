@@ -632,27 +632,6 @@ challenges:
     vault read auth/azure/role/ingress
     ```
 
-    Apply ingress gateway configuration
-
-    ```
-    cat << EOF > ingress-gateway.hcl
-    Kind = "ingress-gateway"
-    Name = "ingress-gateway"
-
-    Listeners = [
-    {
-      Port = 8080
-      Protocol = "tcp"
-      Services = [
-        {
-          Name = "web"
-        }
-      ]
-    }
-    ]
-    EOF
-    consul config write ingress-gateway.hcl
-    ```
     Provision Ingress VM Scale Set
 
     ```
@@ -677,6 +656,11 @@ challenges:
     hostname: workstation
     path: /
     port: 8200
+  - title: App
+    type: service
+    hostname: workstation
+    path: /ui
+    port: 8080
   - title: Text Editor
     type: code
     hostname: workstation
@@ -686,4 +670,4 @@ challenges:
     hostname: workstation
   difficulty: basic
   timelimit: 3000
-checksum: "16599105099884605375"
+checksum: "12163765715180279067"

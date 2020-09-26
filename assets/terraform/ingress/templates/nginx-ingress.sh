@@ -141,7 +141,6 @@ services = [
     id   = "$(hostname)"
     name = "ingress-gateway"
     port = 8080
-    tags = ["web"]
     checks = [
       {
         id       = "HTTP-TCP"
@@ -185,8 +184,6 @@ server {
     location / {
       proxy_pass https://web;
       proxy_http_version 1.1;
-      proxy_set_header Upgrade $http_upgrade;
-      proxy_set_header Connection "Upgrade";
 
       # these refer to files written by templates above
       proxy_ssl_certificate /etc/ssl/cert.pem;

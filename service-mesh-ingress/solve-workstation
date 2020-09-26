@@ -49,23 +49,7 @@ vault write auth/azure/role/ingress \
     ttl=8h
 vault read auth/azure/role/ingress
 
-cat << EOF > ingress-gateway.hcl
-Kind = "ingress-gateway"
-Name = "ingress-gateway"
 
-Listeners = [
-{
-    Port = 8080
-    Protocol = "tcp"
-    Services = [
-    {
-        Name = "web"
-    }
-    ]
-}
-]
-EOF
-consul config write ingress-gateway.hcl
 cd /root/terraform/ingress/
 terraform plan
 terraform apply -auto-approve > /root/terraform/ingress/terraform.out
