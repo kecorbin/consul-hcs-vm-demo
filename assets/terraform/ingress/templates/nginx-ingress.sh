@@ -135,7 +135,7 @@ mkdir --parents /etc/ssl
 touch /etc/consul-template/consul-template-config.hcl
 
 
-cat <<SERVICES>> /etc/consul/config/services.hcl
+cat << SERVICES >  /etc/consul/config/services.hcl
 services = [
   {
     id   = "$(hostname)"
