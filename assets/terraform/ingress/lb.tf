@@ -2,7 +2,7 @@ resource "azurerm_public_ip" "vmss" {
   name                         = "vmss-public-ip"
   location                     = data.terraform_remote_state.vnet.outputs.resource_group_location
   resource_group_name          = data.terraform_remote_state.vnet.outputs.resource_group_name
-  public_ip_address_allocation = "static"
+  allocation_method            = "Static"
   domain_name_label            = data.terraform_remote_state.vnet.outputs.resource_group_name
   tags                         = var.tags
 }
@@ -17,7 +17,7 @@ resource "azurerm_lb" "vmss" {
     public_ip_address_id = azurerm_public_ip.vmss.id
   }
 
-  tags = "${var.tags}"
+  tags = var.tags
 }
 
 resource "azurerm_lb_backend_address_pool" "bpepool" {

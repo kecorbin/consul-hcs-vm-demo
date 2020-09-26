@@ -19,7 +19,7 @@ variable "custom_data_file" {
 }
 variable "tags" {
   description = "A map of the tags to use for the resources that are deployed"
-  type        = "map"
+  type        = map
 
   default = {
     environment = "demo"
