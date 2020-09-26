@@ -107,11 +107,11 @@ WantedBy=multi-user.target
 EOF
 
 # Install Consul-template
-CONSUL_TEMPLATE_VERSION="0.22.0"
-curl --silent --remote-name https://releases.hashicorp.com/consul-template/$${CONSUL_TEMPLATE_VERSION}/consul-template_$${CONSUL_TEMPLATE_VERSION}_linux_amd64.zip
-unzip consul-template_$${CONSUL_TEMPLATE_VERSION}_linux_amd64.zip
+CONSUL_TEMPLATE_VERSION="0.25.1"
+curl --silent --remote-name https://releases.hashicorp.com/consul-template/${CONSUL_TEMPLATE_VERSION}/consul-template_${CONSUL_TEMPLATE_VERSION}_linux_amd64.zip
+unzip consul-template_${CONSUL_TEMPLATE_VERSION}_linux_amd64.zip
 mv consul-template /usr/local/bin/
-rm unzip consul-template_$${CONSUL_TEMPLATE_VERSION}_linux_amd64.zip
+rm unzip consul-template_${CONSUL_TEMPLATE_VERSION}_linux_amd64.zip
 
 sudo cat << EOF > /etc/systemd/system/consul-template.service
 [Unit]
@@ -135,6 +135,25 @@ mkdir --parents /etc/ssl
 touch /etc/consul-template/consul-template-config.hcl
 
 
+cat <<SERVICES>> /etc/consul/config/services.hcl
+services = [
+  {
+    id   = "$(hostname)"
+    name = "ingress-gateway"
+    port = 8080
+    tags = ["web"]
+    checks = [
+      {
+        id       = "HTTP-TCP"
+        interval = "10s"
+        tcp      = "localhost:8080"
+        timeout  = "1s"
+      }
+    ]
+  }
+]
+SERVICES
+
 
 # Generate consul connect certs for ingress-gateway service
 cat << EOF > /etc/ssl/ca.crt.tmpl
@@ -152,18 +171,27 @@ EOF
 
 # create consul template for nginx config
 cat << EOF > /etc/nginx/conf.d/load-balancer.conf.ctmpl
+upstream web {
+{{range connect "web"}}
+  server {{.Address}}:{{.Port}};
+{{end}}
+}
+
 server {
     listen       8080;
     server_name  localhost;
 
+
     location / {
-    {{range connect "webserver"}}
-          proxy_pass https://{{.Address}}:{{.Port}};
-    {{end}}
-          # these refer to files written by templates above
-          proxy_ssl_certificate /etc/ssl/cert.pem;
-          proxy_ssl_certificate_key /etc/ssl/cert.key;
-          proxy_ssl_trusted_certificate /etc/ssl/ca.crt;
+      proxy_pass https://web;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "Upgrade";
+
+      # these refer to files written by templates above
+      proxy_ssl_certificate /etc/ssl/cert.pem;
+      proxy_ssl_certificate_key /etc/ssl/cert.key;
+      proxy_ssl_trusted_certificate /etc/ssl/ca.crt;
 
     }
 }
