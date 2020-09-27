@@ -34,4 +34,6 @@ consul intention create web app
 cd /root/terraform/ingress/
 terraform plan
 terraform apply -auto-approve > /root/terraform/ingress/terraform.out
+
+service nginx restart
 exit 0
