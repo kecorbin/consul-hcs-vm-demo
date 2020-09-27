@@ -36,4 +36,7 @@ terraform plan
 terraform apply -auto-approve > /root/terraform/ingress/terraform.out
 
 service nginx restart
+
+sleep 180
+
 exit 0

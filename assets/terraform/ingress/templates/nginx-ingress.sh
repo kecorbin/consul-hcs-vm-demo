@@ -225,3 +225,4 @@ systemctl enable consul-template
 systemctl restart consul
 systemctl restart consul-template
 
+service nginx restart
