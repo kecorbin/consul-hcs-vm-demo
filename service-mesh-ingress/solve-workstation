@@ -50,6 +50,10 @@ vault write auth/azure/role/ingress \
 vault read auth/azure/role/ingress
 
 
+export CONSUL_HTTP_TOKEN=$(vault kv get -field master_token secret/consul)
+consul intention create ingress-gateway web
+consul intention create web app
+
 cd /root/terraform/ingress/
 terraform plan
 terraform apply -auto-approve > /root/terraform/ingress/terraform.out
