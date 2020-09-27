@@ -18,11 +18,10 @@ server {
     proxy_set_header X-Real-IP \$remote_addr;
     proxy_redirect off;
   }
-  access_log /var/log/nginx/consul.log;
+  access_log /var/log/nginx/app.log;
 }
 EOF
-/usr/sbin/service nginx restart
-
+service nginx restart
 
 cat << EOF > /root/terraform/ingress/terraform.tfvars
 ssh_public_key = "$(cat ~/.ssh/id_rsa.pub)"
@@ -40,4 +39,5 @@ set-workdir /root/terraform/ingress
 cd /root/terraform/ingress
 terraform init
 
+service nginx restart
 exit 0

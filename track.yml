@@ -16,7 +16,7 @@ private: true
 published: true
 show_timer: true
 challenges:
-- slug: provision-azure-vnets
+- slug: 1-provision-azure-vnets
   id: e2yhpfkqkpg1
   type: challenge
   title: Provision Azure VNETs
@@ -56,7 +56,7 @@ challenges:
     path: /root/terraform/vnet
   difficulty: basic
   timelimit: 3000
-- slug: provision-core-services
+- slug: 2-provision-core-services
   id: horvoci14l5i
   type: challenge
   title: Provision Core Services
@@ -102,7 +102,7 @@ challenges:
     path: /root/terraform/hcs
   difficulty: basic
   timelimit: 3000
-- slug: validate-hcs
+- slug: 3-validate-hcs
   id: psmptkjhezfz
   type: challenge
   title: Validate HCS
@@ -223,7 +223,7 @@ challenges:
     hostname: workstation
   difficulty: basic
   timelimit: 3000
-- slug: create-service-principals
+- slug: 4-create-service-principals
   id: 9uz8jowxedns
   type: challenge
   title: Create Identities.
@@ -264,7 +264,7 @@ challenges:
     hostname: workstation
   difficulty: basic
   timelimit: 3000
-- slug: create-consul-policies
+- slug: 5-create-consul-policies
   id: fejqp2qchvdf
   type: challenge
   title: Create Consul ACL Policies
@@ -341,7 +341,7 @@ challenges:
     hostname: workstation
   difficulty: basic
   timelimit: 3000
-- slug: configure-consul-auth-method
+- slug: 6-configure-consul-auth-method
   id: vvspbrxytdbx
   type: challenge
   title: Create Consul Auth method for Azure
@@ -403,7 +403,7 @@ challenges:
     hostname: workstation
   difficulty: basic
   timelimit: 3000
-- slug: configure-vault-auth-method
+- slug: 7-configure-vault-auth-method
   id: f00b179ddwpw
   type: challenge
   title: Create Vault Auth method for Azure
@@ -475,7 +475,7 @@ challenges:
     hostname: workstation
   difficulty: basic
   timelimit: 3000
-- slug: deploy-vm-environments
+- slug: 8-deploy-vm-environments
   id: daw5ieuyvfxr
   type: challenge
   title: Deploy VM Application
@@ -554,7 +554,7 @@ challenges:
     path: /root/terraform/vms
   difficulty: basic
   timelimit: 3000
-- slug: service-mesh-ingress
+- slug: 9-service-mesh-ingress
   id: 9y3q5kixygie
   type: challenge
   title: Create an ingress service
@@ -571,29 +571,7 @@ challenges:
     Create the policy for the ingress service
 
     ```
-    cat << EOF > /root/policies/ingress.hcl
-    node_prefix "ingress-" {
-        policy = "write"
-    }
-    agent_prefix "ingress-" {
-        policy = "write"
-    }
-    key_prefix "_rexec" {
-        policy = "write"
-    }
-    node_prefix "" {
-        policy = "read"
-    }
-
-    service "ingress-gateway" {
-        policy = "write"
-    }
-    service_prefix "" {
-        policy = "read"
-    }
-
-    EOF
-
+    cat /root/policies/ingress-gateway.hcl
     ```
 
 
@@ -604,7 +582,7 @@ challenges:
     consul acl policy create \
       -name "ingress-policy" \
       -description "Policy for ingress gateways" \
-      -rules @/root/policies/ingress.hcl
+      -rules @/root/policies/ingress-gateway.hcl
     consul acl role create \
       -name "ingress-role" \
       -description "Role for the ingress gateway service" \
@@ -614,7 +592,7 @@ challenges:
     Create an ACL binding rule for the ingress service.
 
     ```
-    consul acl binding-rule create -method=azure -bind-type=role -bind-name=ingress-role -selector='value.xms_mirid matches `.*/ingress`'
+    consul acl binding-rule create -method=azure -bind-type=role -bind-name=ingress-role -selector='value.xms_mirid matches `.*/ingress-gateway`'
     ```
 
     Create Vault Role for Ingress service
@@ -670,4 +648,4 @@ challenges:
     hostname: workstation
   difficulty: basic
   timelimit: 3000
-checksum: "13646859307708310075"
+checksum: "16293955141009618816"
