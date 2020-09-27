@@ -3,7 +3,14 @@
 #Utils
 apt-get update -y
 apt-get upgrade -y
-sudo apt-get install -y unzip jq nginx
+apt-get install -y unzip jq nginx
+
+# Fix for Nginx PID problem in Ubuntu 16.04 in an EC2 instance
+systemctl stop nginx
+mkdir /etc/systemd/system/nginx.service.d
+printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" > /etc/systemd/system/nginx.service.d/override.conf
+systemctl daemon-reload
+systemctl start nginx
 
 service_id=$(hostname)
 hostname=$(hostname)
